@@ -1,0 +1,49 @@
+{% extends "base_min.html" %}
+{% load static %}
+{% block title %}Iron Book - Sign up{% endblock %}
+{% block body %}
+<div class="row">
+	<div class="card mx-auto gradient-card">
+		<h4 class="card-header text-center py-4">
+			Iron Book - Sign up
+		</h4>
+		<article class="card-body">
+			{% if form.errors %}
+				{% if form.non_field_errors %}
+					{{ form.non_field_errors }}
+				{% endif %}
+			{% endif %}
+			<form method="post">
+				{% csrf_token %}
+				<div class="form-group">
+					<input type="email" placeholder="Email" name="username" autofocus maxlength="150" required class="form-control{% if form.username.errors %} is-invalid{% endif %}" value="{{form.username.value|default:""}}">
+					{% for error in form.username.errors %}
+					<div class="invalid-feedback">
+			        	{{ error|escape }}
+			        </div>
+			        {% endfor %}
+				</div>
+				<div class="form-group">
+					<input type="password" name="password1" placeholder="Password" required minlength="8" maxlength="20" class="form-control{% if form.password1.errors %} is-invalid{% endif %}">
+					<small class="form-text text-muted form-text text-center mb-4">At least 8 characters, not entirely numeric</small>
+					{% for error in form.password1.errors %}
+					<div class="invalid-feedback">
+			        	{{ error|escape }}
+			        </div>
+			        {% endfor %}
+				</div>
+				<div class="form-group">
+					<input type="password" name="password2" placeholder="Password verification" required="" class="form-control{% if form.password2.errors %} is-invalid{% endif %}">
+					{% for error in form.password2.errors %}
+					<div class="invalid-feedback">
+			        	{{ error|escape }}
+			        </div>
+			        {% endfor %}
+				</div>
+				<br>
+				<button type="submit" class="btn btn-primary btn-block">Submit</button>
+			</form>
+		</article>
+	</div>
+</div>
+{% endblock %}

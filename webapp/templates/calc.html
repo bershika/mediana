@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{%block title%}Mediana{%endblock%}
+{% load webpack_loader static %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
+<script src="https://cdn.datatables.net/plug-ins/1.10.12/sorting/datetime-moment.js"></script>
+{% endblock %}
+
+{% block body %}
+<button data-drawer-target="sidebar-multi-level-sidebar" data-drawer-toggle="sidebar-multi-level-sidebar" aria-controls="sidebar-multi-level-sidebar" type="button" class="inline-flex items-center p-2 mt-2 ms-3 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+   <span class="sr-only">Open sidebar</span>
+   <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+   <path clip-rule="evenodd" fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
+   </svg>
+</button>
+
+<aside id="sidebar-multi-level-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen pt-16 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700" aria-label="Sidebar">
+   <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+        <ul id="deposit-dropdown" class="upload-dd py-2 space-y-2">
+              <li>
+                <a href="#" class="block py-2 px-3 md:p-0 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:dark:text-blue-500" aria-current="page">
+                <label for="deposit-dropzone" action="{% url 'read-statement' %}" class="fileupload flex py-2 px-3 border-gray-200 border-2 border-dashed rounded-lg dark:border-gray-700 ">
+                  <svg class="w-6 h-6 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                  </svg>
+                  <span class="ml-3">Click to upload</span>
+                  {% csrf_token %}
+                  <input id="deposit-dropzone" type="file" name="files[]" hidden multiple accept="application/pdf"/>
+                </label>
+                </a>
+              </li>
+        </ul>
+   </div>
+</aside>
+
+<div class="p-4 sm:ml-64 flex">
+   <div class="flex justify-center text-sm  w-full h-screen overflow-y-auto p-6 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-16 bg-gray-50 dark:bg-gray-800">
+      <table id="test-list" class="w-full text-left rtl:text-right text-gray-500 dark:text-gray-400">
+        {% csrf_token %}
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+          <tr>
+            <th>provider</th>
+            <th>ref number</th>
+            <th>patient name</th>
+            <th>service date</th>
+            <th>service description</th>
+            <th>submitted</th>
+            <th>paid</th>
+            <th>claim status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+   </div>
+</div>
+
+
+<!-- {% include "_loading_animation.html" %} -->
+{% endblock %}
+
+
+{% block js %}
+<script src="{% static 'js/fileupload.js' %}"></script>
+<script>
+    $(document).ready(function () {
+        $(".fileupload").fileUpload();
+    });
+</script>
+<script type="text/javascript">
+
+//   const selectTarget = (fromElement, selector) => {
+//   if (!(fromElement instanceof HTMLElement)) {
+//     return null;
+//   }
+
+//   return fromElement.querySelector(selector);
+// };
+
+// const resizeData = {
+//   tracking: false,
+//   startWidth: null,
+//   startCursorScreenX: null,
+//   handleWidth: 10,
+//   resizeTarget: null,
+//   parentElement: null,
+//   maxWidth: null,
+// };
+
+// $(document.body).on('mousedown', '.cursor-col-resize', null, (event) => {
+//   if (event.button !== 0) {
+//     return;
+//   }
+
+//   event.preventDefault();
+//   event.stopPropagation();
+
+//   const handleElement = event.currentTarget;
+
+//   if (!handleElement.parentElement) {
+//     console.error(new Error("Parent element not found."));
+//     return;
+//   }
+
+//   // Use the target selector on the handle to get the resize target.
+//   const targetSelector = handleElement.getAttribute('data-target');
+//   const targetElement = selectTarget(handleElement.parentElement, targetSelector);
+
+//   if (!targetElement) {
+//     console.error(new Error("Resize target element not found."));
+//     return;
+//   }
+
+//   resizeData.startWidth = $(targetElement).outerWidth();
+//   resizeData.startCursorScreenX = event.screenX;
+//   resizeData.resizeTarget = targetElement;
+//   resizeData.parentElement = handleElement.parentElement;
+//   resizeData.maxWidth = $(handleElement.parentElement).innerWidth() - resizeData.handleWidth;
+//   resizeData.tracking = true;
+
+//   console.log('tracking started');
+// });
+
+// $(window).on('mousemove', null, null, (event) => {
+//   if (resizeData.tracking) {
+//     const cursorScreenXDelta = event.screenX - resizeData.startCursorScreenX;
+//     const newWidth = Math.min(resizeData.startWidth + cursorScreenXDelta, resizeData.maxWidth);
+
+//     $(resizeData.resizeTarget).outerWidth(newWidth);
+//   }
+// });
+
+// $(window).on('mouseup', null, null, (event) => {
+//   if (resizeData.tracking) {
+//     resizeData.tracking = false;
+
+//     console.log('tracking stopped');
+//   }
+// });
+    // $.ajax({
+    //   url: '{% url "read-statement" %}',
+    //   method: 'GET', //change to POST
+    //   //data: { start: page * entries_per_page, length: entries_per_page},
+    //   headers: {'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()},
+    //   //beforeSend: function(xhr){start_loading();}
+    //   success: function(data){
+    //     console.log(data['data']);
+    //     $('#test-list').DataTable({
+    //       data: data['data'],
+    //       columns: [
+    //         { "data": "key", "name": "key" }, // -1
+    //         { "data": "patient_first_name", "name": "patient_first_name" }, // 0
+    //         { "data": "patient_last_name", "name" : "patient_last_name" }, //1
+    //         { "data": "reference_number", "name": "reference_number" }, //2
+    //         { "data": "service_date", "name": "service_date" }, //3
+    //         { "data": "submitted_expense", "name": "submitted_expense" }, //4
+    //         { "data": "amount_paid", "name": "amount_paid" }, //5
+    //         { "data": "invoice_number", "name": "invoice_number" }, //5
+    //       ]
+    //     });
+    //   }
+    // });
+    // .fail(function(data){
+    //   error_message = 'Request failed. Try again later.'
+    //   alert(error_message);
+    // });
+</script>
+{% endblock %}

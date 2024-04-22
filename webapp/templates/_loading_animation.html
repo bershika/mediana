@@ -1,0 +1,31 @@
+<div class="modal helix-loader">
+	<div class="helix-dots">
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+		<span class="dot"></span>
+	</div>
+	<div class="helix-backdrop"></div>
+</div>
+<script>
+$(function() {
+	function set_loading_modal_top() {
+		const loading_modal = $('.helix-dots:visible');
+		const loading_container = loading_modal.closest('.relative');
+		const wh = $(window).height();
+		const ch = $(loading_container).height();
+		const vh = ch > wh ? wh : ch;
+		const scroll = $(window).scrollTop();
+		const top = ch > wh ? scroll + (vh/2) : (vh/2);
+		loading_modal.css('top', top + 'px');
+	}
+
+	$(window).on("load resize scroll", set_loading_modal_top);
+});
+</script>

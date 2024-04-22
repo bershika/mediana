@@ -1,0 +1,61 @@
+<form method="post" id="login-form">
+	{% csrf_token %}
+	<div class="form-group mb-2">
+		<input type="email" placeholder="Email" name="username" autofocus="" required="" class="form-control">
+	</div>
+	<div class="form-group mb-3">
+		<input type="password" name="password" required="" class="form-control" placeholder="******">
+		<div class="invalid-feedback">We don't recognize this username or password</div>
+	</div>
+	<div class="form-group">
+		<button type="submit" class="btn btn-primary btn-block">Submit</button>
+	</div>
+</form>
+<script type="text/javascript">
+	var asyncForm = (function(){
+		const headers = {
+			'cache-control':  'no-cache',
+			'content-type':   'application/x-www-form-urlencoded'
+		};
+		var $form = $( "#login-form" );
+
+		var showError = function() {
+			$form.find('input').addClass('is-invalid');
+		};
+
+		var clearError = function() {
+			$form.find('input').removeClass('is-invalid');
+		};
+
+		var success = function(response){
+			if(response['result']){
+				window.location.replace('{% url "landing" %}');
+			}
+			else{showError();}
+		};
+		var error = function(response){
+			alert("An error occured: " + response.status + " " + response.statusText);
+		};
+
+		var init = function(){
+			$form.on("submit", function(e){
+				e.preventDefault();
+				clearError();
+				$.ajax({
+					type: "POST",
+					url: "{% url 'signin' %}",
+					headers: headers,
+					data: $form.serialize(),
+					success: success,
+					error: error
+	      		});
+	      	});
+	      	$form.find("input").on("input", clearError);
+		};
+		// Public API
+		return {
+			init: init
+		};
+	})();
+	asyncForm.init();
+</script>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load static %}
+{% load webpack_loader static %}
+
+{% block title %}
+	Mediana
+{% endblock %}
+{% block body %}
+
+{% stylesheet_pack 'app' %}
+<div class="poster takeaway">
+</div>
+{% endblock %}
+{% block js %}
+<script type="text/javascript">
+	$('.demo-panel-header h1').removeClass('text-dark');
+	$('.takeaway .overlay').addClass('load');
+</script>
+{% endblock %}
+

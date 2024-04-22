@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Iron Book | Page not found{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'eval/style.css' %}" />
+{% endblock %}
+
+{% block body %}
+<div class="container main-container">
+	<div class="poster centered" style="max-height: 600px;">
+		<div class="text-center my-0 py-0">
+			<h4>Looks like you followed a bad link.</h4>
+			<h4>Here's a link to the <a href="{% url 'index' %}">homepage</a>.</h4>
+		</div>
+	</div>
+</div>
+{% endblock %}

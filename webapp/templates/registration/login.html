@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Iron Book - Sign in{% endblock %}
+
+{% block body %}
+{% if next and user.is_authenticated %}
+	<p>Your account doesn't have access to this page. To proceed, please login with an account that has access.</p>
+{% endif %}
+{% if user.is_authenticated %}
+<script type="text/javascript">
+	window.location.href = "{% url 'eval' %}";
+</script>
+{% endif %}
+
+<div class="container main-container">
+	<div class="poster centered" style="min-height:600px; max-height:800px;">
+	<div class="login-card card gradient-card effect2">
+		<h4 class="card-header text-center py-4">
+			Iron Book - Sign in
+		</h4>
+		<div class="card-body">
+			{% if form.errors %}
+                <small class="text-danger text-center mb-2" style="display:block;">
+                    Your username and password didn't match
+                </small>
+            {% elif next %}
+				<p class="text-success text-center my-5">Please sign in to see this page</p>
+			{% endif %}
+			<form method="post" action="{% url 'login' %}">
+				{% csrf_token %}
+				<div class="form-group mb-2">
+					<div class="input-group">
+						<div class="input-group-prepend">
+						    <span class="input-group-text"><i class="bi bi-at"></i></span>
+						 </div>
+						 <input type="email" placeholder="Email" name="username" autofocus="" required="" id="id_username" class="form-control" autocomplete style="height:3rem;">
+					</div>
+				</div>
+				<div class="form-group mb-3">
+					<div class="input-group">
+						<div class="input-group-prepend">
+						    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+						 </div>
+						 <input type="password" name="password" required="" id="id_password" class="form-control" placeholder="******" style="height:3rem;">
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-block" style="padding:.8rem">Submit</button>
+					<input type="hidden" name="next" value="{{ next }}">
+				</div>
+				<p class="text-center mt-4">Don't have an account? <a href="{% url 'signup' %}">Sign Up!</a></p>
+			</form>
+		</div>
+	</div>
+	</div>
+</div>
+{% endblock %}

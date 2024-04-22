@@ -1,0 +1,117 @@
+{% if form.errors %}
+	{% if form.non_field_errors %}
+		{{ form.non_field_errors }}
+	{% endif %}
+{% endif %}
+<div class="alert alert-success" hidden role="alert"></div>
+<form method="post" id="signup-form">
+	{% csrf_token %}
+	<div class="form-group">
+		<input type="email" placeholder="Email" name="username" autofocus maxlength="150" required class="form-control">
+		<div class="invalid-feedback"></div>
+	</div>
+	<div class="form-group">
+		<input type="password" name="password1" placeholder="Password" required class="form-control">
+		<small id="passwordHelp" class="text-muted">
+			At least 8 characters, not entirely numeric
+		</small>
+		<div class="invalid-feedback">
+		</div>
+	</div>
+	<div class="form-group">
+		<input type="password" name="password2" placeholder="Password verification" required class="form-control">
+		<div class="invalid-feedback"></div>
+	</div>
+	<button type="submit" class="btn btn-primary btn-block">Submit</button>
+</form>
+<script type="text/javascript">
+	var signupForm = (function(){
+
+		let headers = {
+			'cache-control':  'no-cache',
+			'content-type':   'application/x-www-form-urlencoded'
+		};
+		var $form = $( "#signup-form" );
+
+		var $alertError = $form.find('.text-danger');
+
+		var showError = function() {
+			$alertError.removeClass('invisible');
+		};
+
+		var clearGError = function(){
+			$(this).removeClass('is-invalid').next('.invalid-feedback').text('');
+		};
+
+		var clearFError = function(){
+			$form.find('.is-invalid').removeClass('is-invalid').next('.invalid-feedback').text('');
+			$form.removeClass('was-validated').prev('.alert').prop('hidden', true);
+		};
+
+		var responseSuccess = function(response){
+			if(response['result']){
+				window.location.replace('{% url "landing" %}');
+				return;
+			}
+			var errorDict = {};
+			try{
+				errorDict = JSON.parse(response['errors']);
+			}
+			catch(error){
+				console.log(error);
+				console.log(response);
+			}
+			$.each(errorDict, function(key, fieldError){
+				let errorInput = $form.find('input[name=' + key + ']').addClass('is-invalid');
+				let errorFeedback = errorInput.next('.invalid-feedback');
+
+				if(!errorInput.length){
+					$form.addClass('was-validated');
+					//setTimeout($form.hide('slow'), 1000);
+					errorFeedback = $form.prev('.alert').prop('hidden', false);
+				}
+				// else{
+				// 	errorInput.addClass('is-invalid');
+				// }
+
+				$.each(fieldError, function(index, error){
+					errorFeedback.append(error);
+					if(++index < fieldError.length){
+						errorFeedback.append('<br>');
+					}
+				});
+			});
+			showError();
+		};
+		var responseError = function(response){
+			alert("An error occured: " + response.status + " " + response.statusText);
+		};
+
+		var init = function(){
+			$form.on("submit", function(e){
+				e.preventDefault();
+				clearFError();
+				$.ajax({
+					type: "POST",
+					url: "{% url 'signup' %}",
+					headers: headers,
+					data: $form.serialize(),
+					success: responseSuccess,
+					error: responseError
+	      		});
+	      	});
+
+	      	$form.on("input", function(){
+	      		$('input[name="password2"')[0].setCustomValidity($('input[name="password2"').val() != $('input[name="password1"').val() ? "Passwords do not match." : "");
+	      	});
+	      	$form.find("input").on("input", clearGError);
+		};
+		// Public API
+		return {
+			init: init
+		};
+	})();
+
+	const signupFormSelector = "#signup-form";
+	signupForm.init();
+</script>

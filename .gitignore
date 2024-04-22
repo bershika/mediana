@@ -1,0 +1,11 @@
+.vagrant
+db.sqlite3
+ubuntu-xenial-16.04-cloudimg-console.log
+*.pyc
+firefox.log
+venv
+node_modules
+*.bkb.*
+*.log
+data
+docs
