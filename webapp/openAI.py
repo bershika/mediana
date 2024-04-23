@@ -8,7 +8,8 @@ from django.conf import settings
 from .openPDF import DataFactory
 
 LOGGER = logging.getLogger(__name__)
-API_KEY = os.environ.get('AI_KEY')
+
+API_KEY = settings.OPENAI_KEY
 
 SUNLIFE 	= "Sun Life" # claim num
 CANLIFE 	= "Canada Life"
@@ -64,21 +65,15 @@ class OpenAIDriver:
 	@staticmethod
 	def _text_contains(keyword_list, file_text, provider=None):
 		try:
-			file_text = re.sub(r'\s+', ' ', file_text.casefold()) #remove multiple spaces
+			file_text = re.sub(r'\s+', ' ', file_text.casefold()) # remove multiple spaces
 			### improve
-			file_text = re.sub(r"\s(\S)\s", '\\1', file_text)  #condense space-separated letters
+			file_text = re.sub(r"\s(\S)\s", '\\1', file_text) # condense space-separated letters
 		except Exception as e: LOGGER.error("Error in _text_contains {}".format(e))
-		# if provider == MANULIFE:
-			# LOGGER.error('1*******')
-			# LOGGER.error(file_text)
-			# LOGGER.error('2*******')
-			# LOGGER.error(re.sub(r"\s(\S)\s",'\\1', file_text))
+		# if provider == MANULIFE: pass
 
 		for k in keyword_list:
 			sanitized_name = k.casefold()
-			LOGGER.error(sanitized_name)
 			if sanitized_name in file_text: return True
-			# if sanitized_name in re.sub(r"\s(\S)\s",'\\1', file_text): return True
 
 	def get_insurance_provider(self, file_text):
 		try: file_text = file_text.casefold()
@@ -120,34 +115,7 @@ class OpenAIDriver:
 		You are an insurance statement processing solution.
 		Find statement details and line items and provide your answer in JSON as followig:
 		'''
-		# "payment_number": { "type": "string" },
-		# "payment_date": { "type": "string" },
-		# "claimants":{
-		# 	"type": "array",
-		# 	"items": {
-		# 		"type": "object",
-		# 		"description": "line items grouped by Patient Name",
-		# 		"properties":{
-		# 			"patient_name": { "type": "string" },
-		# 			"line_items": {
-		# 				"type": "array",
-		# 				"items": {
-		# 					"type": "object",
-		# 					"properties": {
-		# 						"claim_number": { "type": "string" },
-		# 						"service_date": { "type": "string" },
-		# 						"service_description": { "type": "string" },
-		# 						"claimed_amount": { "type": "number" },
-		# 						"paid_amount": { "type": "number" }
-		# 					}
-		# 				}
-		# 			},
-		# 			"patient_total_claimed": { "type": "number", "description": "Total for Patient in Claimed" },
-		# 			"patient_total_paid": { "type": "number", "description": "Total for Patient in Plan Paid" }
-		# 		},
-		# 		"required": []
-		# 	}
-		# }
+
 		prompt = '''
 			"payment_number": <Direct Deposit Number>,
 			"payment_date": <DIRECT DEPOSIT STATEMENT date>,
@@ -228,9 +196,9 @@ class OpenAIDriver:
 			Provide your answer in JSON.
 			Format Dates as DD-MM-YYYY.
 			'''
-			#Ignor notes and codes at the bottom of grouped claims if present.
-			#
-			prompt = '''
+			# Ignor notes and codes at the bottom of grouped claims if present.
+			prompt = ""
+			'''
 				"payment_number": <Direct Deposit Number>,
 				"payment_date": <DIRECT DEPOSIT STATEMENT date>,
 				"patients":
@@ -251,7 +219,7 @@ class OpenAIDriver:
 					"patient_total_paid": <Total for Patient Plan Paid>
 				]
 			'''
-		#system_msg += prompt
+		system_msg += prompt
 		return system_msg
 
 	def get_statement_schema(self, provider):
@@ -261,7 +229,8 @@ class OpenAIDriver:
 				"payment_number": { "type": "string" },
 				"payment_date": { "type": "string" },
 				"payment_amount": { "type": "number", "description": "Total payment amount" },
-				# "unit": {
+				# enum example: 
+				#"unit": {
 				# 	"type": "string",
 				# 	"enum": ["grams", "ml", "cups", "pieces", "teaspoons"]
 				# },
@@ -324,9 +293,6 @@ class OpenAIDriver:
 										}
 									}
 								}
-								# ,
-								# "patient_total_claimed": { "type": "number", "description": "Total for Patient (first number) Claimed Amount" },
-								# "patient_total_paid": { "type": "number", "description": "Total for Patient (second number) Plan Paid Amount`" }
 							},
 							"required": ["patient_claims"]
 						}
@@ -410,13 +376,6 @@ class OpenAIDriver:
 		return schema
 
 	def request_ai(self, system_msg, user_msg, schema):
-		# LOGGER.error(system_msg)
-		# LOGGER.error('system_msg')
-		# LOGGER.error(user_msg)
-		# LOGGER.error('user_msg')
-		# LOGGER.error(schema)
-		# LOGGER.error('schema')
-
 		response = self.client.chat.completions.create(
 			model="gpt-3.5-turbo", #"gpt-4-turbo-preview "
 			temperature=0,
@@ -436,8 +395,6 @@ class OpenAIDriver:
 			functions=[{"name": "getPaymentData", "parameters": schema}],
 			function_call={ "name": "getPaymentData" }
 		)
-		LOGGER.error('response')
-		LOGGER.error(response)
 		return self.get_response_data(response)
 
 	def get_response_data(self, response, call_type='function'):
@@ -450,25 +407,11 @@ class OpenAIDriver:
 		return data
 
 	def fetch_statement_data(self, file_text, provider, request):
-		system_msg = self.get_statement_prompt(provider)
-		schema = self.get_statement_schema(provider)
-
-		query = '''Extract data from above statement.'''
-		#extract data from above statement and return only the json containing the following -
-		# 	insurance_provider (`unknown` if not found),
-		# 	claim_number (called cpn or form number in the source document),
-		# 	patient_name in `first name last name` format,
-		# 	and for each line item present in the claim -
-		# 		service_date (also called date or date of service) as dd/mm/YYYY,
-		# 		service_description,
-		# 		submitted_amount (called `amount claimed` in the source),
-		# 		total_paid (called `amount reimbursed`).
-		# patient_first_name, patient_last_name, reference_number,
-		# service_date as dd/mm/YYYY, submitted_expense, eligible_expense, amount_paid -
-		# for each line item present in the statement.
-		# line_items=
-		user_msg = file_text + '\n\n' + query
-		data = self.request_ai(system_msg, user_msg, schema)
+		system_msg 	= self.get_statement_prompt(provider)
+		schema 		= self.get_statement_schema(provider)
+		query 		= '''Extract data from above statement.'''
+		user_msg 	= file_text + '\n\n' + query
+		data 		= self.request_ai(system_msg, user_msg, schema)
 
 		if not data or 'patients' not in data: return data
 
@@ -485,9 +428,6 @@ class OpenAIDriver:
 				desc = row.get('service_description', '')
 				ca = row.get('claimed_amount')
 				pa = row.get('paid_amount')
-				#key = slugify("{} {} {:.2f}".format(cn, pn, sd,))
-				# index of duplicates or every line
-				#key = slugify("{} {} {} {}".format(doctype, cn, sd, ca)) # todo: collect all the keys test if unique
 				key = slugify("{} {} {}".format(cn, sd, ca))
 
 				line = {
@@ -504,10 +444,7 @@ class OpenAIDriver:
 				}
 				table_data.append(line);
 				dataframe[key] = line
-		#table = df.to_json(orient='split', index=False)
-		#user_statements = request.session.get(doctype, {})[docnum] = dataframe
 		request.session[doctype] = {docnum: dataframe}
-
 		return dData
 
 	def fetch_claim_data(self, file_text, provider, request):
@@ -544,12 +481,10 @@ class OpenAIDriver:
 			status 	= 'new'
 
 			for statement in user_statements:
-				LOGGER.error('statement')
 				status = 'not found {}'.format(key)
 				# treatment has a matching row in a statement
-				LOGGER.error('!!!!key {}'.format(key))
 				if statement.get(key):
-					status = '???'
+					status = '?'
 					if statement.get(key).get('paid_amount') == pa:
 						status = 'paid'
 
@@ -565,8 +500,6 @@ class OpenAIDriver:
 				'status': status,
 				'key': key
 			})
-		LOGGER.error('dData')
-		LOGGER.error(dData)
 		return dData
 
 	def get_statement_line(self, data):
@@ -601,8 +534,8 @@ class InsuranceDocument():
 			if not provider:
 				content = DataFactory().read_pdf(self.file)
 				provider = self.driver.get_insurance_provider(content)
-		except Exception as e: LOGGER.error(e) #todo: add tracing
-		return provider or UNKNOWN # or UNKNOWN?
+		except Exception as e: LOGGER.error(e, exc_info=True)
+		return provider or UNKNOWN
 
 	def read(self):
 		# add try/catch
@@ -626,10 +559,5 @@ class Invoice(InsuranceDocument):
 
 	def read(self):
 		content = DataFactory().read_pdf(self.file)
-		# files = DataFactory().list_source_dir(self.source_dir)
-		# data = []
-		# content = ''
-		# for f in files:
-		# 	content += DataFactory().read_pdf(f) + '\n\n'
 		return OpenAIDriver().get_invoice_data(content)
 
